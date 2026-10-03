@@ -1,45 +1,72 @@
-const CACHE='lam7-v9';
+// مهام لمح — Service Worker (v10)
+const CACHE='lam7-v10';
+const SDK='lam7-sdk-v1';          // مكتبات Firebase (ملفات ثابتة بإصدار محدد — آمنة للكاش)
 const STATIC=['./manifest.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)));
-  self.skipWaiting(); // activate immediately
+  self.skipWaiting();
 });
 
 self.addEventListener('activate',e=>{
   e.waitUntil(
-    caches.keys().then(keys=>
-      Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
-    )
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k!==SDK).map(k=>caches.delete(k))))
   );
-  self.clients.claim(); // take control immediately
+  self.clients.claim();
 });
 
+// شبكة أولاً بمهلة قصيرة، ولو بطيئة/مقطوعة نرجع للكاش — يفتح فورًا حتى بنت ضعيف أو بدون نت
+function networkFirst(req,ms){
+  return new Promise(resolve=>{
+    let done=false;
+    const fallback=()=>caches.match(req,{ignoreSearch:true}).then(r=>r||caches.match('./index.html')).then(r=>r||caches.match('./'));
+    const t=setTimeout(()=>{if(done)return;fallback().then(r=>{if(r&&!done){done=true;resolve(r);}});},ms);
+    fetch(req,{cache:'no-cache'}).then(res=>{
+      clearTimeout(t);
+      if(res&&res.status===200){const copy=res.clone();caches.open(CACHE).then(c=>{c.put('./index.html',copy.clone()).catch(()=>{});c.put(req,copy).catch(()=>{});});}
+      if(!done){done=true;resolve(res);}
+    }).catch(()=>{
+      clearTimeout(t);
+      if(done)return;
+      fallback().then(r=>{done=true;resolve(r||new Response('أوف لاين',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}}));});
+    });
+  });
+}
+
 self.addEventListener('fetch',e=>{
-  const url=e.request.url;
-  
-  // HTML - دايماً من النت (مش من الكاش)
-  if(e.request.destination==='document'||url.endsWith('/')||url.endsWith('.html')){
+  const req=e.request;
+  if(req.method!=='GET')return;
+  const url=new URL(req.url);
+
+  // صفحة التطبيق
+  if(req.mode==='navigate'||req.destination==='document'){
+    e.respondWith(networkFirst(req,3000));
+    return;
+  }
+
+  // مكتبات Firebase من gstatic (إصدار ثابت) — كاش أولاً: أسرع فتح + تشتغل أوف لاين
+  if(url.hostname==='www.gstatic.com'&&url.pathname.startsWith('/firebasejs/')){
     e.respondWith(
-      fetch(e.request,{cache:'no-cache'}).catch(()=>caches.match('./index.html'))
+      caches.open(SDK).then(c=>c.match(req).then(hit=>hit||fetch(req).then(res=>{
+        if(res&&res.status===200)c.put(req,res.clone());
+        return res;
+      })))
     );
     return;
   }
-  
-  // Firebase & Google - network only
-  if(url.includes('firebase')||url.includes('googleapis')||url.includes('gstatic')){
-    e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503})));
-    return;
-  }
-  
-  // باقي الملفات (أيقونات، manifest) - cache first
+
+  // أي طلبات خارجية (Firestore / Auth / Google) — مباشرة من الشبكة، لا تدخل الكاش
+  if(url.origin!==self.location.origin)return;
+
+  // ملفات التطبيق الثابتة: كاش أولاً مع تحديث بالخلفية
   e.respondWith(
-    caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-      if(res&&res.status===200&&!url.includes('chrome-extension')){
-        caches.open(CACHE).then(c=>c.put(e.request,res.clone()));
-      }
-      return res;
-    }).catch(()=>new Response('',{status:503})))
+    caches.match(req).then(hit=>{
+      const net=fetch(req).then(res=>{
+        if(res&&res.status===200)caches.open(CACHE).then(c=>c.put(req,res.clone()));
+        return res;
+      }).catch(()=>hit);
+      return hit||net;
+    })
   );
 });
 
@@ -56,7 +83,6 @@ self.addEventListener('notificationclick',e=>{
   }));
 });
 
-// Force update message
 self.addEventListener('message',e=>{
   if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting();
 });

@@ -8,6 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="مهام لمح">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>مهام لمح</title>
@@ -159,6 +164,19 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
 .ver-meta{font-size:12px;margin-top:6px}
 .ver-prev{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.7}
 .ver-warn{font-size:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:10px;padding:10px}
+
+/* Install card */
+.install-card{display:none;margin:10px 12px 0;background:linear-gradient(135deg,#7F1D1D,#B91C1C);color:#fff;border-radius:16px;padding:14px;align-items:center;gap:12px;box-shadow:0 6px 18px rgba(127,29,29,.28)}
+.install-card.show{display:flex}
+.install-card img{width:46px;height:46px;border-radius:12px;background:#fff;flex-shrink:0}
+.install-txt{flex:1;min-width:0}
+.install-txt b{display:block;font-size:14px}
+.install-txt span{display:block;font-size:11.5px;opacity:.85;margin-top:2px;line-height:1.6}
+.install-go{background:#fff;color:#7F1D1D;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0}
+.install-x{background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:12px;cursor:pointer;flex-shrink:0}
+.howto-step{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.7}
+.howto-step:last-child{border-bottom:none}
+.howto-n{background:var(--red-d);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -210,6 +228,12 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
       <div class="sync-dot off" id="syncDot"></div>
       <div class="avatar" id="avatarBtn" onclick="confirmSignOut()"></div>
     </div>
+  </div>
+  <div id="installCard" class="install-card">
+    <img src="icon-192.png" alt="">
+    <div class="install-txt"><b>ثبّت التطبيق على شاشتك</b><span>يفتح فورًا زي أي تطبيق، ويشتغل بدون إنترنت</span></div>
+    <button class="install-go" onclick="installApp()">تثبيت</button>
+    <button class="install-x" onclick="dismissInstall()" aria-label="إغلاق">✕</button>
   </div>
   <div id="notifAlert" class="alert alert-green" style="display:none">
     <p>فعّل الإشعارات لتلقي تذكيرات بالمهام</p>
@@ -273,6 +297,59 @@ window.addEventListener('unhandledrejection',function(e){
   if(el)el.textContent='خطأ: '+(e.reason&&e.reason.message||String(e.reason));
 });
 
+// ── تثبيت التطبيق (PWA install) ─────────────────────────────
+(function(){
+  var ua=navigator.userAgent||'';
+  var isIOS=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  var isAndroid=/android/i.test(ua);
+  function standalone(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;}
+  window.__deferredInstall=null;
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredInstall=e;refreshInstallUI();});
+  window.addEventListener('appinstalled',function(){window.__deferredInstall=null;try{localStorage.setItem('lam7_installed','1');}catch(x){}refreshInstallUI();toast('✅ تم تثبيت التطبيق');});
+  function dismissedRecently(){try{var t=+localStorage.getItem('lam7_install_dismiss')||0;return Date.now()-t<7*864e5;}catch(x){return false;}}
+  function installed(){return standalone()||(function(){try{return localStorage.getItem('lam7_installed')==='1'&&standalone();}catch(x){return false;}})();}
+  window.refreshInstallUI=function(){
+    var card=document.getElementById('installCard');
+    if(card){
+      var can=!installed()&&!dismissedRecently()&&(window.__deferredInstall||isIOS||isAndroid);
+      card.classList.toggle('show',!!can);
+    }
+    var sb=document.getElementById('installSettingsBtn'),st=document.getElementById('installSettingsState');
+    if(sb)sb.style.display=installed()?'none':'';
+    if(st)st.textContent=installed()?'✓ التطبيق مثبّت على جهازك':'';
+  };
+  window.dismissInstall=function(){try{localStorage.setItem('lam7_install_dismiss',String(Date.now()));}catch(x){}refreshInstallUI();};
+  function toast(m){var t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:10000;font-family:inherit';document.body.appendChild(t);setTimeout(function(){t.remove();},2600);}
+  function howto(){
+    var old=document.getElementById('howtoModal');if(old)old.remove();
+    var steps;
+    if(isIOS)steps=['افتح الرابط في <b>Safari</b> (مش من داخل تطبيق تاني).','اضغط زرار المشاركة <b>⬆️</b> في أسفل الشاشة.','اختار <b>«إضافة إلى الشاشة الرئيسية»</b> ثم <b>إضافة</b>.'];
+    else if(isAndroid)steps=['افتح قايمة المتصفح <b>⋮</b> (أعلى الشاشة).','اختار <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.','اضغط <b>تثبيت</b> وهتلاقي الأيقونة على شاشتك.'];
+    else steps=['في شريط العنوان اضغط أيقونة <b>التثبيت ⊕</b> على يمين الرابط.','أو من قايمة المتصفح <b>⋮</b> اختار <b>«تثبيت مهام لمح»</b>.','اضغط <b>تثبيت</b>.'];
+    var bg=document.createElement('div');bg.id='howtoModal';bg.className='modal-bg';
+    bg.onclick=function(e){if(e.target===bg)bg.remove();};
+    bg.innerHTML='<div class="modal"><div class="modal-hd"><b>📲 تثبيت التطبيق</b><button onclick="document.getElementById(\'howtoModal\').remove()">✕</button></div><div class="modal-body">'+steps.map(function(t,i){return '<div class="howto-step"><div class="howto-n">'+(i+1)+'</div><div>'+t+'</div></div>';}).join('')+'</div></div>';
+    document.body.appendChild(bg);
+  }
+  window.installApp=async function(){
+    var ev=window.__deferredInstall;
+    if(ev){
+      try{
+        ev.prompt();
+        var r=await ev.userChoice;
+        window.__deferredInstall=null;
+        if(r&&r.outcome==='accepted')try{localStorage.setItem('lam7_installed','1');}catch(x){}
+        else dismissInstall();
+      }catch(x){howto();}
+      refreshInstallUI();return;
+    }
+    if(installed()){toast('التطبيق مثبّت بالفعل');return;}
+    howto();
+  };
+  document.addEventListener('DOMContentLoaded',refreshInstallUI);
+  setInterval(refreshInstallUI,4000);
+})();
+
 // SW registration
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(function(reg){
@@ -291,9 +368,8 @@ if('serviceWorker' in navigator){
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,updateDoc,onSnapshot,query,where,orderBy,limit}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{initializeFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,updateDoc,onSnapshot,query,where,orderBy,limit}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut as fbSignOut}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const FB={apiKey:"AIzaSyAkmcQ7y7VgaIfsLQawkQEikk8Y2Lhdaqk",authDomain:"lam7task.firebaseapp.com",projectId:"lam7task",storageBucket:"lam7task.firebasestorage.app",messagingSenderId:"78468933354",appId:"1:78468933354:web:0a6a0ffa55fd3e386a5993"};
 const VAPID="BCFlrV1fM77DYV90ynDeDpNWtvtUCjxxGmgkiQLBjrXqv7qhACxJoDZ7xuuFaKparMPqOD-NZo8MGoYRB02dRL0";
@@ -395,10 +471,19 @@ function migrateDone(day){
 function taskId(ci,ti){return cats[ci]&&cats[ci].tasks[ti]&&cats[ci].tasks[ti].id;}
 
 const fba=initializeApp(FB);
-const db=getFirestore(fba);
+const db=initializeFirestore(fba,{experimentalAutoDetectLongPolling:true}); // يتخطى مشاكل الشبكات الضعيفة تلقائيًا
 const auth=getAuth(fba);
 const provider=new GoogleAuthProvider();
-let msg=null;try{msg=getMessaging(fba);}catch(e){}
+let msg=null,msgMod=null;
+async function loadMsg(){ // الإشعارات تتحمّل عند الحاجة فقط — يخفف زمن الفتح
+  if(msg)return msg;
+  try{
+    msgMod=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+    msg=msgMod.getMessaging(fba);
+    msgMod.onMessage(msg,pl=>{try{new Notification(pl.notification.title,{body:pl.notification.body,icon:'./icon-192.png'});}catch{}});
+  }catch{msg=null;}
+  return msg;
+}
 
 const AR_D=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const AR_M=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -576,6 +661,15 @@ async function pullCloud(){
   dot('busy');
   const u=curUser.uid;
   let cloud=null;
+  // نطلق القراءات التلاتة بالتوازي بدل ما كل واحدة تستنى اللي قبلها
+  const usP=withTimeout(getDoc(doc(db,'users',u)),10000).catch(()=>null);
+  const daysP=(async()=>{
+    try{
+      let sn=await withTimeout(getDocs(query(collection(db,'days'),where('uid','==',u))),15000);
+      if(sn.empty)sn=await withTimeout(getDocs(collection(db,'days')),15000);
+      return sn;
+    }catch{return null;}
+  })();
   try{
     const sn=await withTimeout(getDoc(doc(db,'userCats',u)),12000);
     cloud=sn.exists()?sn.data():null;
@@ -627,10 +721,11 @@ async function pullCloud(){
     }
   }
   loadFailed=false;
+  try{render();}catch{} // المهام تظهر فور وصولها — بدون انتظار باقي القراءات
 
   try{
-    const us=await withTimeout(getDoc(doc(db,'users',u)),10000);
-    if(us.exists()&&us.data().mktProgress){
+    const us=await usP;
+    if(us&&us.exists()&&us.data().mktProgress){
       const k=userKey();const ud=LS.get(k)||{};
       ud.mktProgress=us.data().mktProgress;LS.set(k,ud);
     }
@@ -638,9 +733,8 @@ async function pullCloud(){
 
   // سجلات الأيام (فقط بتاعتي)
   try{
-    let snap=await withTimeout(getDocs(query(collection(db,'days'),where('uid','==',u))),15000);
-    if(snap.empty)snap=await withTimeout(getDocs(collection(db,'days')),15000);
-    snap.forEach(d=>{
+    const snap=await daysP;
+    if(snap)snap.forEach(d=>{
       if(!d.id.startsWith(u+'_'))return;
       const periodK=d.id.slice(u.length+1);
       if(LS.get(pendingKey(periodK))){writeToFirebase(periodK,loadDayLocal(periodK));return;} // تعديل محلي لسه ما اتبعتش
@@ -668,8 +762,22 @@ function ensureTaskIdsQuiet(){
 window.doLogin=async function(){
   document.getElementById('loginBtn').style.display='none';
   document.getElementById('loginLoading').style.display='block';
-  // Redirect دايماً — أموثوق على mobile وworkers.dev
+  // كمبيوتر: popup (أسرع — بدون إعادة تحميل). موبايل/PWA: redirect (أضمن)
+  const ua=navigator.userAgent||'';
+  const mobile=/android|iphone|ipad|ipod|mobile/i.test(ua);
+  const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
   try{
+    if(!mobile&&!standalone){
+      try{await signInWithPopup(auth,provider);return;}
+      catch(pe){
+        if(pe&&pe.code==='auth/popup-closed-by-user'||pe&&pe.code==='auth/cancelled-popup-request'){
+          document.getElementById('loginBtn').style.display='flex';
+          document.getElementById('loginLoading').style.display='none';
+          return;
+        }
+        // popup اتحجب أو فشل → redirect
+      }
+    }
     await signInWithRedirect(auth,provider);
   }catch(e){
     document.getElementById('loginBtn').style.display='flex';
@@ -723,7 +831,7 @@ onAuthStateChanged(auth,async user=>{
     document.getElementById('loginLoading').style.display='none';
     curUser=null;return;
   }
-  curUser=user;window._curUser=user;isAdmin=user.email===ADMIN_EMAIL;isApproved=isAdmin;
+  curUser=user;window._curUser=user;isAdmin=user.email===ADMIN_EMAIL;isApproved=isAdmin||!!LS.get(`lam7_approved_${user.uid}`);
 
   // ① فوري من localStorage — بدون انتظار
   const lc0=LS.get(`lam7_cats_${user.uid}`);
@@ -740,6 +848,7 @@ onAuthStateChanged(auth,async user=>{
   // ② في الخلفية: approval + مزامنة
   (async()=>{
     try{
+      const pullP=pullCloud().catch(()=>false); // بالتوازي مع فحص الموافقة
       const usnap=await getDoc(doc(db,'users',user.uid));
       if(isAdmin){
         setDoc(doc(db,'users',user.uid),{name:user.displayName,email:user.email,photo:user.photoURL||'',approved:true,seen:new Date().toISOString()},{merge:true}).catch(()=>{});
@@ -767,7 +876,7 @@ onAuthStateChanged(auth,async user=>{
           return;
         }
       }
-      const ok=await pullCloud();
+      const ok=await pullP;
       if(!ok&&!catsLoaded)loadFailed=true;
       ensureTaskIds();
       render();
@@ -785,14 +894,13 @@ onAuthStateChanged(auth,async user=>{
 
   if(Notification.permission==='default')document.getElementById('notifAlert').style.display='flex';
   if(Notification.permission==='granted')setupFCM();
-  if(msg)onMessage(msg,pl=>{new Notification(pl.notification.title,{body:pl.notification.body,icon:'./icon-192.png'});});
   if(tickTimer)clearInterval(tickTimer);
   tickTimer=setInterval(tickCheck,60000);
 });
 
 async function setupFCM(){
-  if(!msg)return;
-  try{const sw=await navigator.serviceWorker.ready;const tk=await getToken(msg,{vapidKey:VAPID,serviceWorkerRegistration:sw});if(tk)updateDoc(doc(db,'users',curUser.uid),{fcmToken:tk}).catch(()=>{});}catch{}
+  if(!await loadMsg())return;
+  try{const sw=await navigator.serviceWorker.ready;const tk=await msgMod.getToken(msg,{vapidKey:VAPID,serviceWorkerRegistration:sw});if(tk)updateDoc(doc(db,'users',curUser.uid),{fcmToken:tk}).catch(()=>{});}catch{}
 }
 window.reqNotif=async()=>{if(await Notification.requestPermission()==='granted'){document.getElementById('notifAlert').style.display='none';setupFCM();}};
 
@@ -1230,6 +1338,13 @@ function renderSettings(){
       </div>
     </div>
     <div class="asec">
+      <div class="ahdr green">📲 تثبيت التطبيق</div>
+      <div class="arow" style="flex-direction:column;gap:8px;align-items:stretch">
+        <button class="add-btn" id="installSettingsBtn" style="font-size:13px" onclick="installApp()">📲 تثبيت على الشاشة الرئيسية</button>
+        <div id="installSettingsState" style="font-size:12px;color:var(--green);text-align:center"></div>
+      </div>
+    </div>
+    <div class="asec">
       <div class="ahdr red">🛠️ صيانة</div>
       <div class="arow" style="flex-direction:column;gap:8px;align-items:stretch">
         <button class="add-btn" style="background:var(--green);font-size:12px" onclick="openRestorePicker()">♻️ استعادة المهام من الفاير بيس (اختيار نسخة)</button>
@@ -1240,11 +1355,12 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">ℹ️ معلومات</div>
       <div style="padding:14px;font-size:12px;color:var(--muted);line-height:2.2">
-        <div>📦 مهام لمح — الإصدار 20</div>
+        <div>📦 مهام لمح — الإصدار 21</div>
         <div>☁️ البيانات في Firebase Firestore</div>
         <div>🔒 كل مستخدم يرى مهامه الخاصة</div>
       </div>
     </div>`;
+  if(window.refreshInstallUI)refreshInstallUI();
 }
 window.manualSync=async()=>{
   if(!curUser){alert('سجّل دخولك أولاً');return;}
