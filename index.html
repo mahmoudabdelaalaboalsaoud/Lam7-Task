@@ -144,6 +144,21 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
 .freq-yearly{background:#FFF7ED;color:#C2410C}
 .freq-select{border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:11px;font-family:inherit;background:#fff;color:var(--text);outline:none;cursor:pointer}
 .freq-select:focus{border-color:var(--red)}
+
+/* Restore picker */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;width:100%;max-width:560px;max-height:88vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px}
+.modal-hd button{background:var(--bg);border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer}
+.modal-body{overflow-y:auto;padding:10px 12px 18px;display:flex;flex-direction:column;gap:10px}
+.ver-item{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff}
+.ver-item.cur{border-color:var(--green);background:var(--green-l)}
+.ver-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ver-title{font-size:13px;font-weight:700}
+.ver-date{font-size:12px;color:var(--muted);margin-top:2px}
+.ver-meta{font-size:12px;margin-top:6px}
+.ver-prev{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.7}
+.ver-warn{font-size:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:10px;padding:10px}
 </style>
 </head>
 <body>
@@ -221,6 +236,7 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
   </div>
   <div id="view-stats" class="view"><div id="statsContent"></div></div>
   <div id="view-admin" class="view"><div id="adminContent"></div></div>
+  <div id="view-members" class="view"><div id="membersContent"></div></div>
   <div id="view-settings" class="view"><div id="settingsContent"></div></div>
 </div>
 <div class="bnav">
@@ -233,8 +249,11 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
   <button class="nb" id="nav-stats" onclick="switchTab('stats')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>إحصائيات
   </button>
-  <button class="nb" id="nav-admin" onclick="switchTab('admin')" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>إدارة
+  <button class="nb" id="nav-admin" onclick="switchTab('admin')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>مهامي
+  </button>
+  <button class="nb" id="nav-members" onclick="switchTab('members')" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>الأعضاء
   </button>
   <button class="nb" id="nav-settings" onclick="switchTab('settings')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>إعدادات
@@ -272,7 +291,7 @@ if('serviceWorker' in navigator){
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,updateDoc,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,updateDoc,onSnapshot,query,where,orderBy,limit}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,onAuthStateChanged,signOut as fbSignOut}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -353,7 +372,7 @@ function ensureTaskIds(){
       if(!t.id){t.id=uid();changed=true;}
     });
   });
-  if(changed)saveCats();
+  if(changed&&catsLoaded)saveCats();
 }
 
 // بيحول الـ done القديم (أرقام) للـ ID الجديد
@@ -398,7 +417,17 @@ const DEFAULT_CATS=[
 const LS={
   get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}},
+  del(k){try{localStorage.removeItem(k);}catch{}},
 };
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function withTimeout(pr,ms){return new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Error('timeout')),ms);pr.then(v=>{clearTimeout(t);res(v);},e=>{clearTimeout(t);rej(e);});});}
+function catsSig(arr){
+  const str=JSON.stringify((arr||[]).map(c=>[c.cat,(c.tasks||[]).map(t=>[t.name,t.freq||'',t.time||''])]));
+  let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;
+  return (h>>>0).toString(36);
+}
+function countTasks(arr){return (arr||[]).reduce((n,c)=>n+((c.tasks||[]).length),0);}
+const kCats=()=>`lam7_cats_${curUser.uid}`,kTs=()=>`lam7_cats_ts_${curUser.uid}`,kDirty=()=>`lam7_dirty_${curUser.uid}`;
 
 let curUser=null,isAdmin=false,isApproved=false;
 let cats=[],selDate=today(),curTab='today';
@@ -407,6 +436,8 @@ let tickTimer=null,syncTimer=null,syncUserTimer=null;
 let syncQueue=new Set();
 let unsubDay=null,unsubMkt=null,unsubCats=null;
 let lastCatsLocalChange=0; // real-time listeners
+let catsLoaded=false,cloudKnown=null,loadFailed=false,lastVerAt=0,pushing=false,pushAgain=false,pushRetry=null,pushStartedAt=0;
+let unsubDays=[];
 
 function today(){const d=new Date();return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
 function p(n){return String(n).padStart(2,'0');}
@@ -431,18 +462,21 @@ function saveDayLocal(periodK,data){
   LS.set(k,data);
   writeToFirebase(periodK,data);
 }
-async function writeToFirebase(periodK,data){
+function pendingKey(periodK){return `lam7_pending_${curUser.uid}_${periodK}`;}
+function pendingList(){
+  if(!curUser)return [];
+  const pre=`lam7_pending_${curUser.uid}_`;
+  return Object.keys(localStorage).filter(k=>k.startsWith(pre)).map(k=>k.slice(pre.length));
+}
+function writeToFirebase(periodK,data){
   if(!curUser)return;
+  LS.set(pendingKey(periodK),1);
+  if(!navigator.onLine){dot('off');return;}
   dot('busy');
-  try{
-    await setDoc(doc(db,'days',`${curUser.uid}_${periodK}`),{...data,uid:curUser.uid,periodKey:periodK});
-    dot('');
-  }catch{
-    dot('off');
-    // أوف لاين: حفظ في queue
-    syncQueue.add(date);
-    clearTimeout(syncTimer);syncTimer=setTimeout(flushSync,3000);
-  }
+  const pk=pendingKey(periodK);
+  withTimeout(setDoc(doc(db,'days',`${curUser.uid}_${periodK}`),{...data,uid:curUser.uid,periodKey:periodK}),15000)
+    .then(()=>{LS.del(pk);dot(pendingList().length?'off':'');})
+    .catch(()=>{dot('off');clearTimeout(syncTimer);syncTimer=setTimeout(flushSync,8000);});
 }
 function loadMktProg(){const u=LS.get(userKey());return(u&&u.mktProgress)||{};}
 function saveMktProg(prog){
@@ -468,103 +502,204 @@ function effTime(day,ci,ti){
 
 // ── مزامنة السحابة (في الخلفية) ──────────────────────────
 async function flushSync(){
-  if(!curUser||!syncQueue.size||!navigator.onLine)return;
+  if(!curUser||!navigator.onLine)return;
+  const list=pendingList();
+  if(!list.length){dot('');return;}
   dot('busy');
-  const dates=[...syncQueue];syncQueue.clear();
-  for(const date of dates){
-    const data=loadDayLocal(date);
-    try{await setDoc(doc(db,`days`,dbKey(date)),{...data,uid:curUser.uid,date});}
-    catch{syncQueue.add(date);}
+  for(const periodK of list){
+    const data=loadDayLocal(periodK);
+    try{
+      await withTimeout(setDoc(doc(db,'days',`${curUser.uid}_${periodK}`),{...data,uid:curUser.uid,periodKey:periodK}),15000);
+      LS.del(pendingKey(periodK));
+    }catch{}
   }
-  dot(syncQueue.size?'off':'');
+  const left=pendingList().length;
+  dot(left?'off':'');
+  if(left){clearTimeout(syncTimer);syncTimer=setTimeout(flushSync,10000);}
 }
 async function syncUserCloud(){
   if(!curUser||!navigator.onLine)return;
   const u=LS.get(userKey())||{};
   if(u.mktProgress)try{await updateDoc(doc(db,'users',curUser.uid),{mktProgress:u.mktProgress});}catch{}
 }
-async function pullCloud(){
-  if(!curUser||!navigator.onLine)return;
-  dot('busy');
+
+// ══ نسخ المهام (Versions) ════════════════════════════════
+const savedSigs=new Set();
+function saveVersion(arr,savedAt,reason){
+  if(!curUser||!arr||!arr.length)return Promise.resolve(false);
+  const sig=catsSig(arr);
+  const soft=reason==='auto'||reason==='daily'||reason==='before-delete';
+  if(soft&&savedSigs.has(sig))return Promise.resolve(true); // اتحفظت قبل كده في الجلسة
+  savedSigs.add(sig);
+  const clean=JSON.parse(JSON.stringify(arr));
+  return setDoc(doc(db,'userCats',curUser.uid,'versions','v_'+sig),{
+    cats:clean,savedAt:savedAt||new Date().toISOString(),createdAt:new Date().toISOString(),
+    catCount:arr.length,taskCount:countTasks(arr),reason:reason||'auto',sig
+  }).then(()=>{LS.del('lam7_ver_denied');return true;}).catch(()=>{LS.set('lam7_ver_denied',1);return false;});
+}
+function snapshotPrev(newArr){
+  // قبل كل كتابة: احفظ الحالة السابقة (آخر نسخة معروفة على السحابة) كنسخة قابلة للاستعادة
+  const prev=cloudKnown;
+  if(!prev||!prev.cats||!prev.cats.length)return;
+  if(catsSig(prev.cats)===catsSig(newArr))return;
+  const big=countTasks(newArr)<countTasks(prev.cats)-2||newArr.length<prev.cats.length;
+  if(big||Date.now()-lastVerAt>10*60*1000){
+    lastVerAt=Date.now();
+    saveVersion(prev.cats,prev.ts,big?'before-delete':'auto');
+  }
+}
+
+// ── دفع المهام للسحابة (في الخلفية — الواجهة لا تنتظر) ──
+async function pushCats(){
+  if(!curUser||!catsLoaded)return;
+  if(!navigator.onLine){dot('off');return;}
+  const arr=LS.get(kCats()),ts=LS.get(kTs());
+  if(!arr||!ts)return;
+  if(pushing&&Date.now()-pushStartedAt<6000){pushAgain=true;return;} // لو طلب معلّق قديم نكمل برضه
+  pushing=true;pushStartedAt=Date.now();dot('busy');
   try{
-    // cats — تحميل موثوق
-    const csNew=await getDoc(doc(db,'userCats',curUser.uid));
-    const userData=csNew.exists()?csNew.data():{};
-    const firebaseCats=userData.cats||[];
-    const localCats=LS.get(`lam7_cats_${curUser.uid}`)||[];
-    const localCatsTs=LS.get(`lam7_cats_ts_${curUser.uid}`)||'';
-    const firebaseTs=userData.updatedAt||'';
+    snapshotPrev(arr);
+    await withTimeout(setDoc(doc(db,'userCats',curUser.uid),{cats:arr,userModified:true,updatedAt:ts}),15000);
+    cloudKnown={cats:JSON.parse(JSON.stringify(arr)),ts};
+    if(LS.get(kDirty())===ts)LS.del(kDirty());
+    dot(pendingList().length?'off':'');
+  }catch{
+    dot('off');
+    clearTimeout(pushRetry);pushRetry=setTimeout(pushCats,8000);
+  }
+  pushing=false;
+  if(pushAgain){pushAgain=false;pushCats();}
+}
 
-    if(firebaseCats.length>0&&localCatsTs&&firebaseTs&&localCatsTs>firebaseTs){
-      // المحلي أحدث — ادفعه لـ Firebase (تعديل أوف لاين)
-      cats=localCats;
-      await setDoc(doc(db,'userCats',curUser.uid),{cats,userModified:true,updatedAt:localCatsTs});
-      console.log('✅ Pushed newer local cats to Firebase');
-    } else if(firebaseCats.length>0){
-      // Firebase عنده داتا — استخدمه
-      cats=firebaseCats;
-      LS.set(`lam7_cats_${curUser.uid}`,cats);
-      if(firebaseTs)LS.set(`lam7_cats_ts_${curUser.uid}`,firebaseTs);
-    } else if(localCats.length>0){
-      // Firebase فارغ بس المحلي عنده داتا — ادفع للسحابة
-      cats=localCats;
-      const ts=localCatsTs||new Date().toISOString();
-      await setDoc(doc(db,'userCats',curUser.uid),{cats,userModified:true,updatedAt:ts});
-    } else if(isAdmin){
-      // أدمن بدون مهام — migration من config/tasks القديم
-      const csOld=await getDoc(doc(db,'config','tasks'));
-      const oldCats=csOld.exists()?csOld.data().cats||[]:[];
-      if(oldCats.length){
-        cats=oldCats;
-        const ts=new Date().toISOString();
-        await setDoc(doc(db,'userCats',curUser.uid),{cats,userModified:true,updatedAt:ts});
-        LS.set(`lam7_cats_${curUser.uid}`,cats);
-        LS.set(`lam7_cats_ts_${curUser.uid}`,ts);
-        console.log('✅ Migrated '+oldCats.length+' cats from config/tasks');
-      } else {
-        cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
-        const ts=new Date().toISOString();
-        await setDoc(doc(db,'userCats',curUser.uid),{cats,updatedAt:ts});
-        LS.set(`lam7_cats_${curUser.uid}`,cats);
-      }
-    } else {
-      // عضو جديد — مهام فارغة
-      cats=[];
-      if(!csNew.exists())await setDoc(doc(db,'userCats',curUser.uid),{cats,createdAt:new Date().toISOString()});
+async function pullCloud(){
+  if(!curUser||!navigator.onLine)return false;
+  dot('busy');
+  const u=curUser.uid;
+  let cloud=null;
+  try{
+    const sn=await withTimeout(getDoc(doc(db,'userCats',u)),12000);
+    cloud=sn.exists()?sn.data():null;
+  }catch{dot('off');return false;}
+
+  const cCats=(cloud&&cloud.cats)||[],cTs=(cloud&&cloud.updatedAt)||'';
+  const lCats=LS.get(kCats())||[],lTs=LS.get(kTs())||'',dirty=LS.get(kDirty());
+
+  if(cCats.length){
+    if(dirty&&lCats.length&&lTs>cTs){
+      // عندنا تعديل محلي أحدث لسه ما اتبعتش — ابعته
+      cats=lCats;
+      cloudKnown={cats:JSON.parse(JSON.stringify(cCats)),ts:cTs};
+      catsLoaded=true;
+      pushCats();
+    }else{
+      // السحابة هي المرجع — لكن لا نضيّع نسخة محلية مختلفة: نحفظها كنسخة قابلة للاستعادة
+      if(lCats.length&&catsSig(lCats)!==catsSig(cCats))saveVersion(lCats,lTs||undefined,'local-cache');
+      cats=JSON.parse(JSON.stringify(cCats));
+      LS.set(kCats(),cats);
+      if(cTs)LS.set(kTs(),cTs);
+      LS.del(kDirty());
+      cloudKnown={cats:JSON.parse(JSON.stringify(cCats)),ts:cTs};
+      catsLoaded=true;
     }
+  }else if(lCats.length){
+    cats=lCats;catsLoaded=true;cloudKnown=null;
+    LS.set(kDirty(),lTs||new Date().toISOString());
+    if(!lTs)LS.set(kTs(),new Date().toISOString());
+    pushCats();
+  }else{
+    cats=[];catsLoaded=true;cloudKnown=null;
+    if(isAdmin){
+      try{
+        const csOld=await withTimeout(getDoc(doc(db,'config','tasks')),10000);
+        const oldCats=csOld.exists()?(csOld.data().cats||[]):[];
+        if(oldCats.length){
+          cats=oldCats;ensureTaskIdsQuiet();
+          const ts=new Date().toISOString();
+          LS.set(kCats(),cats);LS.set(kTs(),ts);LS.set(kDirty(),ts);
+          pushCats();
+        }else if(!csOld.exists()){
+          cats=JSON.parse(JSON.stringify(DEFAULT_CATS));ensureTaskIdsQuiet();
+          const ts=new Date().toISOString();
+          LS.set(kCats(),cats);LS.set(kTs(),ts);LS.set(kDirty(),ts);
+          pushCats();
+        }
+      }catch{/* لو القراءة اتمنعت: نسيب القائمة فاضية ونظهر زرار الاستعادة — ممنوع نكتب افتراضي فوق بياناته */}
+    }
+  }
+  loadFailed=false;
 
-    // mktProgress
-    const us=await getDoc(doc(db,'users',curUser.uid));
+  try{
+    const us=await withTimeout(getDoc(doc(db,'users',u)),10000);
     if(us.exists()&&us.data().mktProgress){
-      const k=userKey();const u=LS.get(k)||{};
-      u.mktProgress=us.data().mktProgress;LS.set(k,u);
+      const k=userKey();const ud=LS.get(k)||{};
+      ud.mktProgress=us.data().mktProgress;LS.set(k,ud);
     }
-    // days آخر 60 يوم من السحابة
-    const snap=await getDocs(collection(db,'days'));
+  }catch{}
+
+  // سجلات الأيام (فقط بتاعتي)
+  try{
+    let snap=await withTimeout(getDocs(query(collection(db,'days'),where('uid','==',u))),15000);
+    if(snap.empty)snap=await withTimeout(getDocs(collection(db,'days')),15000);
     snap.forEach(d=>{
-      if(!d.id.startsWith(curUser.uid+'_'))return;
-      const periodK=d.id.slice(curUser.uid.length+1);
-      const cloud=d.data();const local=loadDayLocal(periodK);
-      if((cloud.done||[]).length>=(local.done||[]).length){
-        LS.set(dayKey(periodK),{done:cloud.done||[],dt:cloud.dt||{}});
-      }
+      if(!d.id.startsWith(u+'_'))return;
+      const periodK=d.id.slice(u.length+1);
+      if(LS.get(pendingKey(periodK))){writeToFirebase(periodK,loadDayLocal(periodK));return;} // تعديل محلي لسه ما اتبعتش
+      const cd=d.data();
+      LS.set(dayKey(periodK),{done:cd.done||[],dt:cd.dt||{}});
     });
-    dot('');
-  }catch{dot('off');}
+  }catch{}
+  dot(pendingList().length?'off':'');
+
+  // لقطة يومية من النسخة الحالية (للاستعادة لاحقاً)
+  try{
+    const dk=`lam7_ver_day_${u}`;
+    if(cats.length&&LS.get(dk)!==today()){
+      LS.set(dk,today());
+      saveVersion(cats,LS.get(kTs())||undefined,'daily');
+    }
+  }catch{}
+  return true;
+}
+function ensureTaskIdsQuiet(){
+  cats.forEach(cat=>{if(!cat.id)cat.id=uid();(cat.tasks||[]).forEach(t=>{if(!t.id)t.id=uid();});});
 }
 
 // ── Auth ──────────────────────────────────────────────────
 window.doLogin=async function(){
   document.getElementById('loginBtn').style.display='none';
   document.getElementById('loginLoading').style.display='block';
-  try{await signInWithPopup(auth,provider);}
-  catch(e){
-    if(e.code==='auth/popup-blocked'||e.code==='auth/cancelled-popup-request')signInWithRedirect(auth,provider);
-    else{document.getElementById('loginBtn').style.display='flex';document.getElementById('loginLoading').style.display='none';}
+  // Redirect دايماً — أموثوق على mobile وworkers.dev
+  try{
+    await signInWithRedirect(auth,provider);
+  }catch(e){
+    document.getElementById('loginBtn').style.display='flex';
+    document.getElementById('loginLoading').style.display='none';
+    alert('خطأ: '+e.message);
   }
 };
 window.confirmSignOut=()=>{if(confirm('تسجيل الخروج؟'))fbSignOut(auth);};
-getRedirectResult(auth).catch(()=>{});
+// handle redirect result
+getRedirectResult(auth).then(result=>{
+  if(result&&result.user)console.log('Redirect login OK');
+}).catch(e=>{
+  console.warn('Redirect error:',e.code,e.message);
+  // Reset loading state if redirect failed
+  const btn=document.getElementById('loginBtn');
+  const loading=document.getElementById('loginLoading');
+  if(btn)btn.style.display='flex';
+  if(loading)loading.style.display='none';
+});
+
+// Reset loading state if stuck after 15 seconds
+setTimeout(()=>{
+  const loading=document.getElementById('loginLoading');
+  if(loading&&loading.style.display!=='none'&&!window._curUser){
+    document.getElementById('loginBtn').style.display='flex';
+    loading.style.display='none';
+    const el=document.getElementById('splashErr');
+    if(el)el.textContent='انتهت مهلة تسجيل الدخول — حاول مرة ثانية';
+  }
+},15000);
 
 // Failsafe: لو الـ splash فضل 8 ثواني يفتح Login
 setTimeout(()=>{
@@ -588,17 +723,18 @@ onAuthStateChanged(auth,async user=>{
     document.getElementById('loginLoading').style.display='none';
     curUser=null;return;
   }
-  curUser=user;isAdmin=user.email===ADMIN_EMAIL;isApproved=isAdmin;
+  curUser=user;window._curUser=user;isAdmin=user.email===ADMIN_EMAIL;isApproved=isAdmin;
 
   // ① فوري من localStorage — بدون انتظار
-  cats=LS.get(`lam7_cats_${user.uid}`)||(user.email===ADMIN_EMAIL?JSON.parse(JSON.stringify(DEFAULT_CATS)):[]);
+  const lc0=LS.get(`lam7_cats_${user.uid}`);
+  cats=Array.isArray(lc0)?lc0:[];catsLoaded=cats.length>0;loadFailed=false;cloudKnown=null;
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
   hideSplash();
   const av=document.getElementById('avatarBtn');
   if(user.photoURL)av.innerHTML=`<img src="${user.photoURL}" alt="">`;
   else av.textContent=(user.displayName||'?')[0];
-  if(isAdmin)document.getElementById('nav-admin').style.display='flex';
+  if(isAdmin)document.getElementById('nav-members').style.display='flex';
   render(); // عرض فوري
 
   // ② في الخلفية: approval + مزامنة
@@ -631,7 +767,8 @@ onAuthStateChanged(auth,async user=>{
           return;
         }
       }
-      await pullCloud();
+      const ok=await pullCloud();
+      if(!ok&&!catsLoaded)loadFailed=true;
       ensureTaskIds();
       render();
       subscribeDay(selDate);
@@ -640,7 +777,9 @@ onAuthStateChanged(auth,async user=>{
     }catch{
       isApproved=LS.get(`lam7_approved_${user.uid}`)||isAdmin;
       document.getElementById('pendingAlert').style.display=(!isApproved&&!isAdmin)?'flex':'none';
+      if(!catsLoaded)loadFailed=true;
       dot('off');
+      try{render();}catch{}
     }
   })();
 
@@ -658,17 +797,23 @@ async function setupFCM(){
 window.reqNotif=async()=>{if(await Notification.requestPermission()==='granted'){document.getElementById('notifAlert').style.display='none';setupFCM();}};
 
 // ── Render Today ──────────────────────────────────────────
-function renderToday(){
+function renderToday(day){
   if(!curUser||(!isApproved&&!isAdmin)){
     document.getElementById('summaryBar').innerHTML='';
     document.getElementById('tasksArea').innerHTML=`<div class="empty"><div class="empty-ico">⏳</div><div class="empty-txt">في انتظار موافقة المدير</div></div>`;
     return;
   }
+  if(!catsLoaded){document.getElementById('summaryBar').innerHTML='';document.getElementById('tasksArea').innerHTML=loadingBox();return;}
+  if(!cats.length){
+    document.getElementById('summaryBar').innerHTML='';
+    document.getElementById('tasksArea').innerHTML=`<div class="empty"><div class="empty-ico">📝</div><div class="empty-txt">مفيش مهام لسه<br><small style="color:var(--muted)">ضيف مهامك من تبويب «مهامي» — أو استرجع نسخة محفوظة</small></div><div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap"><button class="add-btn" onclick="switchTab('admin')">➕ إضافة مهام</button><button class="add-btn" style="background:var(--green)" onclick="openRestorePicker()">♻️ استعادة نسخة</button></div></div>`;
+    return;
+  }
   // تحميل done لكل فترة
-  const dailyDone=(day||loadDayLocal(selDate)).done||[];
-  const weeklyDone=loadDayLocal(freqPeriodKey('weekly',selDate)).done||[];
-  const monthlyDone=loadDayLocal(freqPeriodKey('monthly',selDate)).done||[];
-  const yearlyDone=loadDayLocal(freqPeriodKey('yearly',selDate)).done||[];
+  const dailyDone=migrateDone(day||loadDayLocal(selDate)).done||[];
+  const weeklyDone=migrateDone(loadDayLocal(freqPeriodKey('weekly',selDate))).done||[];
+  const monthlyDone=migrateDone(loadDayLocal(freqPeriodKey('monthly',selDate))).done||[];
+  const yearlyDone=migrateDone(loadDayLocal(freqPeriodKey('yearly',selDate))).done||[];
 
   function getDone(freq){
     if(freq==='weekly')return weeklyDone;
@@ -784,9 +929,14 @@ function renderStats(){
   document.getElementById('statsContent').innerHTML=h;
 }
 
+function renderMembers(){
+  if(!isAdmin){document.getElementById('membersContent').innerHTML=`<div class="empty"><div class="empty-ico">🔒</div><div class="empty-txt">للمدير فقط</div></div>`;return;}
+  document.getElementById('membersContent').innerHTML=`<div class="asec"><div class="ahdr green" style="flex-direction:column;align-items:flex-start;gap:4px"><div style="display:flex;align-items:center;justify-content:space-between;width:100%">👥 الأعضاء والاشتراكات <button onclick="loadUsersAdmin()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">🔄 تحديث</button></div></div><div id="usersAdmin"><div class="loading">جاري التحميل...</div></div></div>`;
+  loadUsersAdmin();
+}
 function renderAdmin(){
-  if(!isAdmin){document.getElementById('adminContent').innerHTML=`<div class="empty"><div class="empty-ico">🔒</div><div class="empty-txt">للمدير فقط</div></div>`;return;}
-  let h=`<div class="asec"><div class="ahdr green" style="flex-direction:column;align-items:flex-start;gap:4px"><div style="display:flex;align-items:center;justify-content:space-between;width:100%">👥 إدارة الأعضاء والاشتراكات <button onclick="loadUsersAdmin()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">🔄 تحديث</button></div></div><div id="usersAdmin"><div class="loading">جاري التحميل...</div></div></div>`;
+  if(!catsLoaded){document.getElementById('adminContent').innerHTML=loadingBox();return;}
+  let h=`<div class="asec"><div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">📝 مهامي وأقسامي <span class="cat-badge">${cats.length} قسم</span></div></div>`;
   h+=`<div id="catsList">`;
   cats.forEach((cat,ci)=>{
     const isFirst=ci===0,isLast=ci===cats.length-1;
@@ -797,13 +947,13 @@ function renderAdmin(){
     h+=`<button class="sort-btn" onclick="event.stopPropagation();moveCat(${ci},-1)" ${isFirst?'disabled':''} title="لأعلى">▲</button>`;
     h+=`<button class="sort-btn" onclick="event.stopPropagation();moveCat(${ci},1)" ${isLast?'disabled':''} title="لأسفل">▼</button>`;
     h+=`</div>`;
-    h+=`<span style="flex:1;cursor:grab">☰ ${cat.cat}</span>`;
+    h+=`<span style="flex:1;cursor:grab">☰ ${esc(cat.cat)}</span>`;
     h+=`<span class="cat-badge">${cat.tasks.length} مهمة</span>`;
     h+=`<button class="cat-collapse" id="collapse-${ci}" onclick="event.stopPropagation();toggleCollapse(${ci})" title="طي/فتح">▼</button>`;
     h+=`</div>`;
     // Edit row
     h+=`<div class="tasks-container" id="tasks-wrap-${ci}">`;
-    h+=`<div class="cat-edit-row"><input class="edit-inp" placeholder="اسم القسم..." value="${cat.cat}" onchange="updateCatName(${ci},this.value)"><button class="btn-del" onclick="deleteCat(${ci})">🗑 حذف</button></div>`;
+    h+=`<div class="cat-edit-row"><input class="edit-inp" placeholder="اسم القسم..." value="${esc(cat.cat)}" onchange="updateCatName(${ci},this.value)"><button class="btn-del" onclick="deleteCat(${ci})">🗑 حذف</button></div>`;
     // Tasks
     cat.tasks.forEach((t,ti)=>{
       const isFirstT=ti===0,isLastT=ti===cat.tasks.length-1;
@@ -814,7 +964,7 @@ function renderAdmin(){
       h+=`<button class="task-sort-btn" onclick="moveTask(${ci},${ti},1)" ${isLastT?'disabled':''}>▼</button>`;
       h+=`</div>`;
       h+=`<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>`;
-      h+=`<input class="edit-inp" value="${t.name}" onchange="updateTaskName(${ci},${ti},this.value)">`;
+      h+=`<input class="edit-inp" value="${esc(t.name)}" onchange="updateTaskName(${ci},${ti},this.value)">`;
       h+=`<select class="freq-select" onchange="updateTaskFreq(${ci},${ti},this.value)"><option value="daily" ${tFreq==='daily'?'selected':''}>يومي</option><option value="weekly" ${tFreq==='weekly'?'selected':''}>📅 أسبوعي</option><option value="monthly" ${tFreq==='monthly'?'selected':''}>🗓️ شهري</option><option value="yearly" ${tFreq==='yearly'?'selected':''}>📆 سنوي</option></select>`;
       h+=`<input type="time" class="time-inp" value="${t.time&&t.time.match(/^\d{2}:\d{2}$/)?t.time:''}" onchange="saveTaskTime(${ci},${ti},this.value)">`;
       h+=`<button class="btn-del" onclick="deleteTask(${ci},${ti})">✕</button>`;
@@ -827,7 +977,6 @@ function renderAdmin(){
   h+=`</div>`;
   h+=`<div class="asec"><div class="ahdr red">➕ إضافة قسم جديد</div><div class="add-row"><input class="add-inp" id="newCatInp" placeholder="اسم القسم مع الإيموجي..."><button class="add-btn" onclick="addCat()">إضافة</button></div></div>`;
   document.getElementById('adminContent').innerHTML=h;
-  loadUsersAdmin();
 }
 
 // Collapse toggle
@@ -863,8 +1012,7 @@ async function migrateTodayDone(){
   });
   day.done=newDone;
   LS.set(dayKey(selDate),day);
-  // حفظ في Firebase
-  try{await setDoc(doc(db,'days',`${curUser.uid}_${selDate}`),{...day,uid:curUser.uid,date:selDate});}catch{}
+  writeToFirebase(selDate,day);
 }
 
 // Move category with buttons (أسهل من الـ drag)
@@ -1030,23 +1178,20 @@ window.saveDailyTime=function(ci,ti,freq,v){
   const tid=taskId(ci,ti)||`${ci}_${ti}`;
   day.dt[tid]=v;saveDayLocal(periodK,day);
 };
-async function saveCats(){
-  if(!curUser)return;
-  lastCatsLocalChange=Date.now(); // منع subscribeCats من الكتابة فوق التعديل
+function saveCats(){
+  if(!curUser||!catsLoaded)return Promise.resolve();
+  lastCatsLocalChange=Date.now();
   const ts=new Date().toISOString();
-  LS.set(`lam7_cats_${curUser.uid}`,cats);
-  LS.set(`lam7_cats_ts_${curUser.uid}`,ts);
-  if(navigator.onLine){
-    try{dot('busy');await setDoc(doc(db,'userCats',curUser.uid),{cats,userModified:true,updatedAt:ts});dot('');}
-    catch{dot('off');}
-  }
+  LS.set(kCats(),cats);LS.set(kTs(),ts);LS.set(kDirty(),ts); // محلي فوراً — والسحابة في الخلفية
+  pushCats();
+  return Promise.resolve();
 }
 window.updateCatName=async(ci,v)=>{cats[ci].cat=v;await saveCats();};
 window.updateTaskName=async(ci,ti,v)=>{cats[ci].tasks[ti].name=v;await saveCats();};
 window.updateTaskFreq=async(ci,ti,v)=>{cats[ci].tasks[ti].freq=v;await saveCats();renderToday();};
-window.addTask=async(ci)=>{const inp=document.getElementById(`inp-${ci}`);const v=inp.value.trim();if(!v)return;cats[ci].tasks.push({name:v,time:''});inp.value='';await saveCats();renderAdmin();};
+window.addTask=async(ci)=>{const inp=document.getElementById(`inp-${ci}`);const v=inp.value.trim();if(!v)return;cats[ci].tasks.push({id:uid(),name:v,time:''});inp.value='';await saveCats();renderAdmin();};
 window.deleteTask=async(ci,ti)=>{if(!confirm('حذف المهمة؟'))return;cats[ci].tasks.splice(ti,1);await saveCats();renderAdmin();};
-window.addCat=async()=>{const inp=document.getElementById('newCatInp');const v=inp.value.trim();if(!v)return;cats.push({cat:v,cls:CAT_CLASSES[cats.length%CAT_CLASSES.length],tasks:[]});inp.value='';await saveCats();renderAdmin();};
+window.addCat=async()=>{const inp=document.getElementById('newCatInp');const v=inp.value.trim();if(!v)return;cats.push({id:uid(),cat:v,cls:CAT_CLASSES[cats.length%CAT_CLASSES.length],tasks:[]});inp.value='';await saveCats();renderAdmin();};
 window.deleteCat=async(ci)=>{if(!confirm('حذف القسم كاملاً؟'))return;cats.splice(ci,1);await saveCats();renderAdmin();};
 window.saveTaskTime=async(ci,ti,v)=>{cats[ci].tasks[ti].time=v;await saveCats();};
 // approveUser replaced above
@@ -1085,7 +1230,7 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr red">🛠️ صيانة</div>
       <div class="arow" style="flex-direction:column;gap:8px;align-items:stretch">
-        <button class="add-btn" style="background:var(--green);font-size:12px" onclick="restoreFromOldBackup()">♻️ استعادة المهام من النسخة القديمة</button>
+        <button class="add-btn" style="background:var(--green);font-size:12px" onclick="openRestorePicker()">♻️ استعادة المهام من الفاير بيس (اختيار نسخة)</button>
         <button class="add-btn" style="background:var(--amber);font-size:12px" onclick="clearCache()">🗑️ مسح الكاش المحلي</button>
         <button class="add-btn" style="background:#6B7280;font-size:12px" onclick="location.reload()">↺ إعادة تحميل التطبيق</button>
       </div>
@@ -1093,7 +1238,7 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">ℹ️ معلومات</div>
       <div style="padding:14px;font-size:12px;color:var(--muted);line-height:2.2">
-        <div>📦 مهام لمح — الإصدار 17</div>
+        <div>📦 مهام لمح — الإصدار 18</div>
         <div>☁️ البيانات في Firebase Firestore</div>
         <div>🔒 كل مستخدم يرى مهامه الخاصة</div>
       </div>
@@ -1101,49 +1246,150 @@ function renderSettings(){
 }
 window.manualSync=async()=>{
   if(!curUser){alert('سجّل دخولك أولاً');return;}
+  if(!navigator.onLine){alert('مفيش إنترنت دلوقتي');return;}
   try{
     dot('busy');
-    const localCats2=LS.get(`lam7_cats_${curUser.uid}`);
-    const localTs2=LS.get(`lam7_cats_ts_${curUser.uid}`);
-    if(localCats2&&localTs2){
-      await setDoc(doc(db,'userCats',curUser.uid),{cats:localCats2,userModified:true,updatedAt:localTs2});
-    }
-    await pullCloud();
-    render();
-    dot('');
+    await flushSync();
+    if(catsLoaded&&LS.get(kDirty()))await pushCats();
+    const ok=await pullCloud();
+    ensureTaskIds();render();
     if(curTab==='settings')renderSettings();
-    alert('✅ تمت المزامنة');
+    alert(ok?'✅ تمت المزامنة':'⚠️ تعذّرت المزامنة — جرّب بعد شوية');
   }catch(e){dot('off');alert('خطأ: '+e.message);}
 };
+
+// ══ استعادة المهام — اختيار نسخة من النسخ المحفوظة في Firebase ══
+function fmtVerDate(ts){
+  if(!ts)return 'بدون تاريخ مسجّل';
+  const d=new Date(ts);if(isNaN(d))return 'بدون تاريخ مسجّل';
+  return d.toLocaleString('ar-EG',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+let _verItems=[];
+window.closeRestorePicker=function(){const m=document.getElementById('verModal');if(m)m.remove();};
+window.openRestorePicker=async function(){
+  if(!curUser){alert('سجّل دخولك أولاً');return;}
+  closeRestorePicker();
+  const bg=document.createElement('div');bg.className='modal-bg';bg.id='verModal';
+  bg.onclick=e=>{if(e.target===bg)closeRestorePicker();};
+  bg.innerHTML=`<div class="modal"><div class="modal-hd"><b>♻️ استعادة نسخة من المهام</b><button onclick="closeRestorePicker()">✕</button></div><div class="modal-body" id="verBody"><div class="loading">جاري تحميل النسخ المحفوظة...</div></div></div>`;
+  document.body.appendChild(bg);
+  const items=[];const notes=[];
+  const curSig=catsSig(cats);
+  const tasks=[];
+  if(navigator.onLine){
+    tasks.push((async()=>{
+      try{
+        const sn=await withTimeout(getDoc(doc(db,'userCats',curUser.uid)),12000);
+        if(sn.exists()&&(sn.data().cats||[]).length)items.push({kind:'cloud',title:'النسخة الحالية على Firebase',ts:sn.data().updatedAt||'',cats:sn.data().cats});
+      }catch{notes.push('تعذّرت قراءة النسخة الحالية من Firebase.');}
+    })());
+    tasks.push((async()=>{
+      try{
+        const q=query(collection(db,'userCats',curUser.uid,'versions'),orderBy('savedAt','desc'),limit(60));
+        const sn=await withTimeout(getDocs(q),12000);
+        sn.forEach(d=>{const v=d.data();if((v.cats||[]).length)items.push({kind:'ver',title:v.reason==='before-restore'?'نسخة قبل استعادة سابقة':v.reason==='before-delete'?'نسخة قبل حذف':v.reason==='local-cache'?'نسخة من جهاز كان فيه تعديلات':'نسخة محفوظة',ts:v.savedAt||v.createdAt||'',cats:v.cats});});
+      }catch(e){notes.push('denied');}
+    })());
+    if(isAdmin){
+      tasks.push((async()=>{
+        try{
+          const sn=await withTimeout(getDoc(doc(db,'config','tasks')),12000);
+          if(sn.exists()&&(sn.data().cats||[]).length){const d=sn.data();items.push({kind:'legacy',title:'النسخة القديمة (قبل الإصدار 16)',ts:d.updatedAt||d.ts||'',cats:d.cats});}
+        }catch{}
+      })());
+    }
+  }else notes.push('أنت أوف لاين — بتظهر النسخة المحلية بس.');
+  await Promise.all(tasks);
+  const lc=LS.get(kCats());
+  if(Array.isArray(lc)&&lc.length)items.push({kind:'local',title:'النسخة المحفوظة على الجهاز ده',ts:LS.get(kTs())||'',cats:lc});
+  // ترتيب: الأحدث أولاً، وبدون تاريخ في الآخر
+  items.sort((a,b)=>(b.ts?new Date(b.ts).getTime():0)-(a.ts?new Date(a.ts).getTime():0));
+  _verItems=items;
+  const body=document.getElementById('verBody');if(!body)return;
+  let h='';
+  if(notes.includes('denied'))h+=`<div class="ver-warn">⚠️ النسخ المحفوظة تلقائيًا محتاجة تحديث قواعد Firebase (مرة واحدة). بعد التحديث هتبدأ النسخ تتسجل بتاريخها وتظهر هنا.</div>`;
+  notes.filter(n=>n!=='denied').forEach(n=>{h+=`<div class="ver-warn">${esc(n)}</div>`;});
+  if(!items.length)h+=`<div class="empty"><div class="empty-ico">🗂️</div><div class="empty-txt">مفيش نسخ محفوظة لسه</div></div>`;
+  const seen=new Set();
+  items.forEach((it,i)=>{
+    const sig=catsSig(it.cats);
+    const same=sig===curSig;
+    const tc=countTasks(it.cats);
+    const prev=it.cats.slice(0,5).map(c=>esc(c.cat)).join(' • ');
+    h+=`<div class="ver-item${same?' cur':''}"><div class="ver-top"><div><div class="ver-title">${esc(it.title)}${same?' ✓ (هي المعروضة الآن)':''}</div><div class="ver-date">🕒 آخر تعديل: ${esc(fmtVerDate(it.ts))}</div></div>${same?'':`<button class="add-btn" style="font-size:12px;padding:7px 12px" onclick="restoreVersion(${i})">استعادة</button>`}</div><div class="ver-meta">${it.cats.length} قسم · ${tc} مهمة</div><div class="ver-prev">${prev}${it.cats.length>5?' …':''}</div></div>`;
+  });
+  body.innerHTML=h;
+};
+window.restoreVersion=async function(i){
+  const it=_verItems[i];if(!it||!curUser)return;
+  if(!confirm(`هتستبدل مهامك الحالية بنسخة:\n${it.title}\nآخر تعديل: ${fmtVerDate(it.ts)}\n(${it.cats.length} قسم · ${countTasks(it.cats)} مهمة)\n\nنسختك الحالية هتتحفظ قبل الاستبدال وتقدر ترجعلها. تكمل؟`))return;
+  try{
+    if(cats.length)await withTimeout(saveVersion(cats,LS.get(kTs())||undefined,'before-restore'),8000).catch(()=>{});
+    cats=JSON.parse(JSON.stringify(it.cats));
+    catsLoaded=true;loadFailed=false;
+    ensureTaskIdsQuiet();
+    await saveCats();
+    closeRestorePicker();
+    render();
+    alert('✅ تمت الاستعادة');
+  }catch(e){alert('خطأ: '+e.message);}
+};
+window.restoreFromOldBackup=window.openRestorePicker;
+
 window.clearCache=()=>{
   if(!confirm('هيتمسح الكاش المحلي بس — بياناتك في Firebase آمنة 100%. متأكد؟'))return;
   Object.keys(localStorage).filter(k=>k.startsWith('lam7_')).forEach(k=>localStorage.removeItem(k));
   location.reload();
 };
+function showFatal(e){
+  console.error(e);
+  const el=document.getElementById('tasksArea');
+  if(el)el.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-txt">حصل خطأ في العرض<br><small style="color:var(--muted)">${esc(e&&e.message||e)}</small></div><button class="add-btn" style="margin-top:12px" onclick="location.reload()">إعادة تحميل</button></div>`;
+}
+function loadingBox(){
+  if(loadFailed)return `<div class="empty"><div class="empty-ico">📡</div><div class="empty-txt">مش قادر أحمّل مهامك دلوقتي<br><small style="color:var(--muted)">اتأكد من الإنترنت وجرّب تاني</small></div><button class="add-btn" style="margin-top:12px" onclick="retryLoad()">🔄 إعادة المحاولة</button></div>`;
+  return `<div class="empty"><div class="empty-ico">⏳</div><div class="empty-txt">جاري تحميل مهامك...</div></div>`;
+}
+window.retryLoad=async function(){
+  loadFailed=false;render();
+  const ok=await pullCloud();
+  if(!ok)loadFailed=true;
+  ensureTaskIds();render();
+  subscribeDay(selDate);subscribeMktProg();subscribeCats();
+};
 function render(){
   if(!curUser)return;
-  document.getElementById('todayLbl').textContent=fmt(today());
-  document.getElementById('selDateLbl').textContent=fmt(selDate);
-  if(!isApproved&&!isAdmin){document.getElementById('summaryBar').innerHTML='';document.getElementById('tasksArea').innerHTML=`<div class="empty"><div class="empty-ico">⏳</div><div class="empty-txt">في انتظار موافقة المدير</div></div>`;return;}
-  if(curTab==='today')renderToday();
-  else if(curTab==='history')renderHistory();
-  else if(curTab==='stats')renderStats();
-  else if(curTab==='settings')renderSettings();
-  else renderAdmin();
+  try{
+    document.getElementById('todayLbl').textContent=fmt(today());
+    document.getElementById('selDateLbl').textContent=fmt(selDate);
+    if(!isApproved&&!isAdmin){document.getElementById('summaryBar').innerHTML='';document.getElementById('tasksArea').innerHTML=`<div class="empty"><div class="empty-ico">⏳</div><div class="empty-txt">في انتظار موافقة المدير</div></div>`;return;}
+    if(curTab==='today')renderToday();
+    else if(curTab==='history')renderHistory();
+    else if(curTab==='stats')renderStats();
+    else if(curTab==='settings')renderSettings();
+    else if(curTab==='members')renderMembers();
+    else renderAdmin();
+  }catch(e){showFatal(e);}
 }
 
 // ── Real-time Sync (onSnapshot) ───────────────────────────
 function subscribeDay(date){
-  if(unsubDay)unsubDay();
+  unsubDays.forEach(f=>{try{f();}catch{}});unsubDays=[];
+  if(unsubDay){try{unsubDay();}catch{}unsubDay=null;}
   if(!curUser)return;
-  unsubDay=onSnapshot(doc(db,'days',`${curUser.uid}_${date}`),snap=>{
-    if(snap.metadata.hasPendingWrites)return; // تجاهل كتاباتنا احنا
-    const rawCloud=snap.exists()?snap.data():{done:[],dt:{}};
-    const cloud=migrateDone({done:rawCloud.done||[],dt:rawCloud.dt||{}});
-    // دايماً حدّث من Firebase بدون مقارنة
-    LS.set(dayKey(date),cloud);
-    if(curTab==='today')renderToday();
-  },()=>{});
+  const keys=[...new Set([date,freqPeriodKey('weekly',date),freqPeriodKey('monthly',date),freqPeriodKey('yearly',date)])];
+  keys.forEach(pk=>{
+    const un=onSnapshot(doc(db,'days',`${curUser.uid}_${pk}`),snap=>{
+      if(snap.metadata.hasPendingWrites)return; // كتابتنا احنا
+      if(curUser&&LS.get(pendingKey(pk)))return;  // عندنا تعديل محلي لسه ما اتبعتش
+      if(!snap.exists()&&snap.metadata.fromCache)return;
+      const rawCloud=snap.exists()?snap.data():{done:[],dt:{}};
+      const cloud=migrateDone({done:rawCloud.done||[],dt:rawCloud.dt||{}});
+      LS.set(dayKey(pk),cloud);
+      if(curTab==='today')renderToday();
+    },()=>{});
+    unsubDays.push(un);
+  });
 }
 function subscribeMktProg(){
   if(unsubMkt)unsubMkt();
@@ -1163,20 +1409,26 @@ function subscribeMktProg(){
 function subscribeCats(){
   if(unsubCats)unsubCats();
   if(!curUser)return;
-  // بدون includeMetadataChanges — بيجيب بس التحديثات المؤكدة من السيرفر
   unsubCats=onSnapshot(doc(db,'userCats',curUser.uid),snap=>{
-    if(!snap.exists())return;
-    const incoming=snap.data().cats||[];
-    const serverTs=snap.data().updatedAt?new Date(snap.data().updatedAt).getTime():0;
-    const localChg=lastCatsLocalChange;
-    // لو التعديل المحلي أحدث من السيرفر — إجنور (الحذف/الإضافة مش اتزامن لسه)
-    if(localChg>0&&localChg>serverTs&&Date.now()-localChg<5000)return;
-    // لو البيانات الجاية فارغة ومعانا داتا — إجنور
-    if(incoming.length===0&&cats.length>0)return;
-    cats=incoming;
-    LS.set(`lam7_cats_${curUser.uid}`,cats);
-    if(snap.data().updatedAt)LS.set(`lam7_cats_ts_${curUser.uid}`,snap.data().updatedAt);
+    if(!snap.exists()||snap.metadata.hasPendingWrites)return;
+    const d=snap.data();
+    const incoming=d.cats||[],ts=d.updatedAt||'';
+    if(!ts&&cats.length)return;                 // وثيقة بدون تاريخ لا تكتب فوق شيء
+    if(!incoming.length&&cats.length&&!ts)return;
+    const lTs=LS.get(kTs())||'',dirty=LS.get(kDirty());
+    if(dirty&&lTs>ts)return;                    // عندي تعديل أحدث لسه ما اتبعتش
+    if(ts&&lTs&&ts<lTs&&!dirty)return;          // نسخة أقدم من اللي عندي
+    if(catsSig(incoming)===catsSig(cats)&&incoming.length===cats.length){
+      if(ts)LS.set(kTs(),ts);
+      cloudKnown={cats:JSON.parse(JSON.stringify(incoming)),ts};
+      return;
+    }
+    cats=JSON.parse(JSON.stringify(incoming));catsLoaded=true;
+    LS.set(kCats(),cats);if(ts)LS.set(kTs(),ts);LS.del(kDirty());
+    cloudKnown={cats:JSON.parse(JSON.stringify(incoming)),ts};
     ensureTaskIds();
+    const ae=document.activeElement;
+    if(ae&&ae.tagName==='INPUT'&&curTab==='admin')return; // مش هقاطعه وهو بيكتب
     render();
   },()=>{});
 }
@@ -1266,16 +1518,16 @@ window.dragTaskEnd=function(){
   dragTaskCi=null;dragTaskTi=null;stopAutoScroll();
   document.querySelectorAll('.arow').forEach(el=>el.classList.remove('dragging','drag-over-top'));
 };
-window.addEventListener('online',()=>{
-  // لو في تعديلات محلية على المهام — ادفعها لـ Firebase أولاً
-  if(curUser){
-    const localCats2=LS.get(`lam7_cats_${curUser.uid}`);
-    const localTs3=LS.get(`lam7_cats_ts_${curUser.uid}`);
-    if(localCats2&&localTs3){
-      setDoc(doc(db,'userCats',curUser.uid),{cats:localCats2,userModified:true,updatedAt:localTs3}).catch(()=>{});
-    }
-  }
-  flushSync();syncUserCloud();pullCloud().then(()=>{render();subscribeDay(selDate);subscribeMktProg();subscribeCats();});});
+window.addEventListener('online',async()=>{
+  if(!curUser)return;
+  pushing=false;
+  await flushSync();syncUserCloud();
+  await pullCloud();
+  render();
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&curUser&&navigator.onLine){flushSync();if(catsLoaded&&LS.get(kDirty()))pushCats();}
+});
 window.addEventListener('offline',()=>dot('off'));
 
 </script>
