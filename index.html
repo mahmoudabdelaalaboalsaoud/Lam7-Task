@@ -1089,7 +1089,7 @@ async function loadUsersAdmin(){
           h+=`<button class="btn-ok" onclick="extendSub('${uid}',365)" style="font-size:11px">+سنة</button>`;
           h+=`<button class="btn-ok" onclick="setLifetime('${uid}')" style="font-size:11px">∞</button>`;
         }
-        h+=`<button class="btn-ok" onclick="resetMemberTasks('${uid}','${esc((ud.name||'').replace(/'/g,''))}')" style="font-size:11px;background:#FFFBEB;color:#92400E;border-color:#FDE68A">🧹 تفريغ مهامه</button>`;
+        h+=`<button class="btn-ok" onclick="resetMemberTasks('${uid}','${esc((ud.name||'').replace(/'/g,''))}')" style="font-size:11px;background:#FFFBEB;color:#92400E;border-color:#FDE68A">🧹 تفريغ مهامه ونسخه</button>`;
         h+=`<button class="btn-del" onclick="rejectUser('${uid}')" style="margin-right:auto">🗑</button>`;
         h+=`</div>`;
         // Expiry info
@@ -1240,7 +1240,7 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">ℹ️ معلومات</div>
       <div style="padding:14px;font-size:12px;color:var(--muted);line-height:2.2">
-        <div>📦 مهام لمح — الإصدار 19</div>
+        <div>📦 مهام لمح — الإصدار 20</div>
         <div>☁️ البيانات في Firebase Firestore</div>
         <div>🔒 كل مستخدم يرى مهامه الخاصة</div>
       </div>
@@ -1350,7 +1350,14 @@ window.resetMemberTasks=async function(uid,name){
   if(!confirm('تفريغ كل مهام العضو «'+(name||'')+'»؟\nهيبدأ من صفحة فاضية.'))return;
   try{
     await setDoc(doc(db,'userCats',uid),{cats:[],userModified:true,updatedAt:new Date().toISOString()});
-    alert('✅ اتفرّغت مهام العضو');
+    // احذف نسخه المحفوظة كمان (ممكن تكون فيها نسخة من المهام المنسوخة)
+    let removed=0;
+    try{
+      const vs=await getDocs(collection(db,'userCats',uid,'versions'));
+      const dels=[];vs.forEach(v=>dels.push(deleteDoc(doc(db,'userCats',uid,'versions',v.id))));
+      await Promise.all(dels);removed=dels.length;
+    }catch{}
+    alert('✅ اتفرّغت مهام العضو'+(removed?(' وانمسح '+removed+' نسخة محفوظة له'):''));
   }catch(e){alert('خطأ: '+e.message+'\nتأكد من تحديث قواعد Firebase');}
 };
 
