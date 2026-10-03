@@ -584,7 +584,7 @@ async function pullCloud(){
   const cCats=(cloud&&cloud.cats)||[],cTs=(cloud&&cloud.updatedAt)||'';
   const lCats=LS.get(kCats())||[],lTs=LS.get(kTs())||'',dirty=LS.get(kDirty());
 
-  if(cCats.length){
+  if(cCats.length||cTs){
     if(dirty&&lCats.length&&lTs>cTs){
       // عندنا تعديل محلي أحدث لسه ما اتبعتش — ابعته
       cats=lCats;
@@ -976,6 +976,7 @@ function renderAdmin(){
   });
   h+=`</div>`;
   h+=`<div class="asec"><div class="ahdr red">➕ إضافة قسم جديد</div><div class="add-row"><input class="add-inp" id="newCatInp" placeholder="اسم القسم مع الإيموجي..."><button class="add-btn" onclick="addCat()">إضافة</button></div></div>`;
+  if(cats.length)h+=`<div class="asec"><div class="add-row" style="border-top:none"><button class="btn-del" style="flex:1;padding:10px" onclick="clearMyTasks()">🗑 مسح كل مهامي (بتتحفظ نسخة قبل المسح)</button></div></div>`;
   document.getElementById('adminContent').innerHTML=h;
 }
 
@@ -1088,6 +1089,7 @@ async function loadUsersAdmin(){
           h+=`<button class="btn-ok" onclick="extendSub('${uid}',365)" style="font-size:11px">+سنة</button>`;
           h+=`<button class="btn-ok" onclick="setLifetime('${uid}')" style="font-size:11px">∞</button>`;
         }
+        h+=`<button class="btn-ok" onclick="resetMemberTasks('${uid}','${esc((ud.name||'').replace(/'/g,''))}')" style="font-size:11px;background:#FFFBEB;color:#92400E;border-color:#FDE68A">🧹 تفريغ مهامه</button>`;
         h+=`<button class="btn-del" onclick="rejectUser('${uid}')" style="margin-right:auto">🗑</button>`;
         h+=`</div>`;
         // Expiry info
@@ -1238,7 +1240,7 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">ℹ️ معلومات</div>
       <div style="padding:14px;font-size:12px;color:var(--muted);line-height:2.2">
-        <div>📦 مهام لمح — الإصدار 18</div>
+        <div>📦 مهام لمح — الإصدار 19</div>
         <div>☁️ البيانات في Firebase Firestore</div>
         <div>🔒 كل مستخدم يرى مهامه الخاصة</div>
       </div>
@@ -1335,6 +1337,22 @@ window.restoreVersion=async function(i){
   }catch(e){alert('خطأ: '+e.message);}
 };
 window.restoreFromOldBackup=window.openRestorePicker;
+window.clearMyTasks=async function(){
+  if(!curUser||!catsLoaded||!cats.length)return;
+  if(!confirm('هتمسح كل أقسامك ومهامك؟\n(بيتحفظ نسخة قبل المسح وتقدر ترجعها من «استعادة المهام»)'))return;
+  await withTimeout(saveVersion(cats,LS.get(kTs())||undefined,'before-clear'),8000).catch(()=>{});
+  cats=[];
+  await saveCats();
+  render();
+};
+window.resetMemberTasks=async function(uid,name){
+  if(!isAdmin)return;
+  if(!confirm('تفريغ كل مهام العضو «'+(name||'')+'»؟\nهيبدأ من صفحة فاضية.'))return;
+  try{
+    await setDoc(doc(db,'userCats',uid),{cats:[],userModified:true,updatedAt:new Date().toISOString()});
+    alert('✅ اتفرّغت مهام العضو');
+  }catch(e){alert('خطأ: '+e.message+'\nتأكد من تحديث قواعد Firebase');}
+};
 
 window.clearCache=()=>{
   if(!confirm('هيتمسح الكاش المحلي بس — بياناتك في Firebase آمنة 100%. متأكد؟'))return;
