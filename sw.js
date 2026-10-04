@@ -1,5 +1,5 @@
 // مهام لمح — Service Worker (v10)
-const CACHE='lam7-v10';
+const CACHE='lam7-v12';
 const SDK='lam7-sdk-v1';          // مكتبات Firebase (ملفات ثابتة بإصدار محدد — آمنة للكاش)
 const STATIC=['./manifest.json','./icon-192.png','./icon-512.png'];
 

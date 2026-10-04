@@ -130,6 +130,29 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
 .asec.dragging-sec{opacity:.4}
 .time-inp{border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:var(--text);outline:none;width:98px;flex-shrink:0}
 .time-inp:focus{border-color:var(--red)}
+.arow-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.arow-meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.arow-meta .freq-select{height:34px;padding:0 8px;font-size:12px;min-width:92px}
+.arow-meta .time-inp{height:34px;width:104px;padding:0 6px}
+.task-sort-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.task-sort-btn{width:26px;height:20px;padding:0;line-height:1;font-size:10px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text);cursor:pointer;font-family:inherit}
+.task-sort-btn:disabled{opacity:.3;cursor:default}
+.arow .edit-inp{height:36px;min-width:0}
+.arow .btn-del{flex-shrink:0;height:34px;min-width:34px}
+@media (max-width:640px){
+  .arow{flex-direction:column;align-items:stretch;gap:6px;padding:9px 12px}
+  .arow .drag-handle{display:none}
+  .arow-meta{padding-inline-start:34px;gap:8px}
+  .arow-meta .freq-select{flex:1;min-width:0}
+  .arow-meta .time-inp{flex:1;min-width:0;width:auto}
+}
+@media (min-width:641px){
+  .arow-main{display:contents}
+  .arow-main .task-sort-btns,.arow-main .drag-handle{order:0}
+  .arow-main .edit-inp{order:1}
+  .arow-meta{order:2}
+  .arow-main .btn-del{order:3}
+}
 .edit-inp{border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:var(--text);outline:none;flex:1;min-width:80px}
 .edit-inp:focus{border-color:var(--red)}
 .btn-del{background:var(--red-l);color:var(--red);border:1px solid var(--red-b);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
@@ -688,7 +711,7 @@ async function pullCloud(){
       pushCats();
     }else{
       // السحابة هي المرجع — لكن لا نضيّع نسخة محلية مختلفة: نحفظها كنسخة قابلة للاستعادة
-      if(lCats.length&&catsSig(lCats)!==catsSig(cCats))saveVersion(lCats,lTs||undefined,'local-cache');
+      if(cCats.length&&lCats.length&&catsSig(lCats)!==catsSig(cCats))saveVersion(lCats,lTs||undefined,'local-cache'); // مش بنحفظ نسخة محلية قديمة لو السحابة اتفرّغت عمدًا
       cats=JSON.parse(JSON.stringify(cCats));
       LS.set(kCats(),cats);
       if(cTs)LS.set(kTs(),cTs);
@@ -1065,15 +1088,18 @@ function renderAdmin(){
       const isFirstT=ti===0,isLastT=ti===cat.tasks.length-1;
       const tFreq=t.freq||'daily';
       h+=`<div class="arow" draggable="true" data-ci="${ci}" data-ti="${ti}" ondragstart="dragTaskStart(event,${ci},${ti})" ondragover="dragTaskOver(event,${ci},${ti})" ondrop="dragTaskDrop(event,${ci},${ti})" ondragend="dragTaskEnd()">`;
+      h+=`<div class="arow-main">`;
       h+=`<div class="task-sort-btns">`;
       h+=`<button class="task-sort-btn" onclick="moveTask(${ci},${ti},-1)" ${isFirstT?'disabled':''}>▲</button>`;
       h+=`<button class="task-sort-btn" onclick="moveTask(${ci},${ti},1)" ${isLastT?'disabled':''}>▼</button>`;
       h+=`</div>`;
       h+=`<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>`;
       h+=`<input class="edit-inp" value="${esc(t.name)}" onchange="updateTaskName(${ci},${ti},this.value)">`;
+      h+=`<button class="btn-del" onclick="deleteTask(${ci},${ti})" title="حذف">✕</button></div>`;
+      h+=`<div class="arow-meta">`;
       h+=`<select class="freq-select" onchange="updateTaskFreq(${ci},${ti},this.value)"><option value="daily" ${tFreq==='daily'?'selected':''}>يومي</option><option value="weekly" ${tFreq==='weekly'?'selected':''}>📅 أسبوعي</option><option value="monthly" ${tFreq==='monthly'?'selected':''}>🗓️ شهري</option><option value="yearly" ${tFreq==='yearly'?'selected':''}>📆 سنوي</option></select>`;
       h+=`<input type="time" class="time-inp" value="${t.time&&t.time.match(/^\d{2}:\d{2}$/)?t.time:''}" onchange="saveTaskTime(${ci},${ti},this.value)">`;
-      h+=`<button class="btn-del" onclick="deleteTask(${ci},${ti})">✕</button>`;
+      h+=`</div>`;
       h+=`</div>`;
     });
     h+=`<div class="add-row"><input class="add-inp" id="inp-${ci}" placeholder="+ مهمة جديدة..." onkeydown="if(event.key==='Enter')addTask(${ci})"><button class="add-btn" onclick="addTask(${ci})">إضافة</button></div>`;
@@ -1353,7 +1379,7 @@ function renderSettings(){
     <div class="asec">
       <div class="ahdr" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">ℹ️ معلومات</div>
       <div style="padding:14px;font-size:12px;color:var(--muted);line-height:2.2">
-        <div>📦 مهام لمح — الإصدار 23</div>
+        <div>📦 مهام لمح — الإصدار 25</div>
         <div>☁️ البيانات في Firebase Firestore</div>
         <div>🔒 كل مستخدم يرى مهامه الخاصة</div>
       </div>
@@ -1389,21 +1415,21 @@ window.openRestorePicker=async function(){
   bg.onclick=e=>{if(e.target===bg)closeRestorePicker();};
   bg.innerHTML=`<div class="modal"><div class="modal-hd"><b>♻️ استعادة نسخة من المهام</b><button onclick="closeRestorePicker()">✕</button></div><div class="modal-body" id="verBody"><div class="loading">جاري تحميل النسخ المحفوظة...</div></div></div>`;
   document.body.appendChild(bg);
-  const items=[];const notes=[];
+  const items=[];const notes=[];let clearedAt='';
   const curSig=catsSig(cats);
   const tasks=[];
   if(navigator.onLine){
     tasks.push((async()=>{
       try{
         const sn=await withTimeout(getDoc(doc(db,'userCats',curUser.uid)),12000);
-        if(sn.exists()&&(sn.data().cats||[]).length)items.push({kind:'cloud',title:'النسخة الحالية على Firebase',ts:sn.data().updatedAt||'',cats:sn.data().cats});
+        if(sn.exists()){clearedAt=sn.data().clearedAt||'';if((sn.data().cats||[]).length)items.push({kind:'cloud',title:'النسخة الحالية على Firebase',ts:sn.data().updatedAt||'',cats:sn.data().cats});}
       }catch{notes.push('تعذّرت قراءة النسخة الحالية من Firebase.');}
     })());
     tasks.push((async()=>{
       try{
         const q=query(collection(db,'userCats',curUser.uid,'versions'),orderBy('savedAt','desc'),limit(60));
         const sn=await withTimeout(getDocs(q),12000);
-        sn.forEach(d=>{const v=d.data();if((v.cats||[]).length)items.push({kind:'ver',title:v.reason==='before-restore'?'نسخة قبل استعادة سابقة':v.reason==='before-delete'?'نسخة قبل حذف':v.reason==='local-cache'?'نسخة من جهاز كان فيه تعديلات':'نسخة محفوظة',ts:v.savedAt||v.createdAt||'',cats:v.cats});});
+        sn.forEach(d=>{const v=d.data();if((v.cats||[]).length)items.push({kind:'ver',id:d.id,title:v.reason==='before-restore'?'نسخة قبل استعادة سابقة':v.reason==='before-delete'?'نسخة قبل حذف':v.reason==='local-cache'?'نسخة من جهاز كان فيه تعديلات':'نسخة محفوظة',ts:v.savedAt||v.createdAt||'',cats:v.cats});});
       }catch(e){notes.push('denied');}
     })());
     if(isAdmin){
@@ -1416,8 +1442,13 @@ window.openRestorePicker=async function(){
     }
   }else notes.push('أنت أوف لاين — بتظهر النسخة المحلية بس.');
   await Promise.all(tasks);
+  // أي نسخة اتحفظت قبل ما الأدمن يفرّغ مهام العضو تتشال (من العرض ومن السحابة)
+  if(clearedAt){
+    items.forEach(it=>{if(it.kind==='ver'&&it.ts&&it.ts<=clearedAt&&it.id){deleteDoc(doc(db,'userCats',curUser.uid,'versions',it.id)).catch(()=>{});}});
+    for(let i=items.length-1;i>=0;i--){const it=items[i];if(it.kind==='ver'&&it.ts&&it.ts<=clearedAt)items.splice(i,1);}
+  }
   const lc=LS.get(kCats());
-  if(Array.isArray(lc)&&lc.length)items.push({kind:'local',title:'النسخة المحفوظة على الجهاز ده',ts:LS.get(kTs())||'',cats:lc});
+  if(Array.isArray(lc)&&lc.length&&!(clearedAt&&(LS.get(kTs())||'')<=clearedAt))items.push({kind:'local',title:'النسخة المحفوظة على الجهاز ده',ts:LS.get(kTs())||'',cats:lc});
   // ترتيب: الأحدث أولاً، وبدون تاريخ في الآخر
   items.sort((a,b)=>(b.ts?new Date(b.ts).getTime():0)-(a.ts?new Date(a.ts).getTime():0));
   _verItems=items;
@@ -1463,7 +1494,8 @@ window.resetMemberTasks=async function(uid,name){
   if(!isAdmin)return;
   if(!confirm('تفريغ كل مهام العضو «'+(name||'')+'»؟\nهيبدأ من صفحة فاضية.'))return;
   try{
-    await setDoc(doc(db,'userCats',uid),{cats:[],userModified:true,updatedAt:new Date().toISOString()});
+    const nowIso=new Date().toISOString();
+    await setDoc(doc(db,'userCats',uid),{cats:[],userModified:true,updatedAt:nowIso,clearedAt:nowIso});
     // احذف نسخه المحفوظة كمان (ممكن تكون فيها نسخة من المهام المنسوخة)
     let removed=0;
     try{
